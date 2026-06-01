@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Presentasi - Warehouse Astro Bogor</title>
+    
+    <!-- Reveal.js CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reset.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/theme/night.min.css" id="theme">
+    
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        .reveal h1, .reveal h2, .reveal h3 {
+            color: #00f2fe;
+            text-transform: none;
+            font-family: 'Outfit', sans-serif;
+        }
+        .reveal p, .reveal li {
+            font-size: 0.85em;
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+        .highlight {
+            color: #facc15;
+            font-weight: bold;
+        }
+        .icon-large {
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: #4facfe;
+        }
+        .flow-box {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #4facfe;
+            display: inline-block;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides">
+
+            <!-- Slide 1: Title -->
+            <section>
+                <i class="fa-solid fa-box-open icon-large"></i>
+                <h1>Warehouse Astro Bogor</h1>
+                <h3>Sistem Manajemen Operasional Terpadu (PWA)</h3>
+                <p>Panduan Penggunaan & Alur Sistem</p>
+            </section>
+
+            <!-- Slide 2: Latar Belakang -->
+            <section>
+                <h2><i class="fa-solid fa-rocket"></i> Latar Belakang</h2>
+                <ul>
+                    <li>Digitalisasi proses operasional gudang secara <i>real-time</i>.</li>
+                    <li>Menggantikan form kertas dengan sistem berbasis PWA yang <i>mobile-friendly</i>.</li>
+                    <li>Sistem ini mendukung 4 Pilar Peran: <span class="highlight">Karyawan, Team Leader, Security, dan Supervisor</span>.</li>
+                    <li>Tema modern "Astro" untuk antarmuka pengguna yang premium dan interaktif.</li>
+                </ul>
+            </section>
+
+            <!-- Slide 3: Alur Absensi -->
+            <section>
+                <section>
+                    <h2><i class="fa-solid fa-clock"></i> Alur Absensi Harian</h2>
+                    <p>Absensi menggunakan sistem <span class="highlight">3-Step Verification</span> untuk keamanan maksimal.</p>
+                </section>
+                <section>
+                    <h3>Langkah-langkah Absensi</h3>
+                    <div style="display: flex; justify-content: center; align-items: center; flex-wrap: wrap;">
+                        <div class="flow-box">1. Request (Karyawan)<br><small>Menekan "Tiba" atau "Pulang"</small></div>
+                        <i class="fa-solid fa-arrow-right" style="margin: 0 15px;"></i>
+                        <div class="flow-box">2. Approval (Team Leader)<br><small>Verifikasi kehadiran fisik</small></div>
+                        <i class="fa-solid fa-arrow-right" style="margin: 0 15px;"></i>
+                        <div class="flow-box">3. Scan Barcode (Security)<br><small>Khusus saat kepulangan</small></div>
+                    </div>
+                </section>
+            </section>
+
+            <!-- Slide 4: Manajemen Break -->
+            <section>
+                <h2><i class="fa-solid fa-mug-hot"></i> Manajemen Istirahat (Break)</h2>
+                <ul>
+                    <li>Setiap karyawan mendapatkan jatah istirahat <span class="highlight">1 kali</span> per hari kerja.</li>
+                    <li>Proses diinisiasi oleh <b>Team Leader (Assign Break)</b>.</li>
+                    <li>Karyawan akan mendapatkan <b>Exit Pass Barcode</b> berwarna kuning/hijau.</li>
+                    <li>Durasi istirahat dibatasi ketat: <span class="highlight">65 menit</span> terhitung sejak Security melakukan pemindaian (Scan).</li>
+                    <li>Jatah istirahat kedua hanya bisa di-<i>assign</i> kembali jika sudah berlalu <span class="highlight">10 jam</span> dari waktu masuk.</li>
+                </ul>
+            </section>
+
+            <!-- Slide 5: Peminjaman Alat -->
+            <section>
+                <h2><i class="fa-solid fa-walkie-talkie"></i> Peminjaman Alat (SEUIC)</h2>
+                <p>Sistem pencatatan inventaris gudang harian.</p>
+                <ul>
+                    <li>Karyawan melakukan <i>Request</i> peminjaman melalui dasbor.</li>
+                    <li>Pengambilan alat wajib melalui pos Security.</li>
+                    <li>Security melakukan pencatatan kondisi alat (Bagus/Rusak) & verifikasi wajah pengguna.</li>
+                    <li>Saat selesai, alat dikembalikan dan Security memverifikasi ulang kondisi akhirnya.</li>
+                </ul>
+            </section>
+
+            <!-- Slide 6: Peran & Dasbor -->
+            <section>
+                <section>
+                    <h2>Detail Fungsi 4 Peran</h2>
+                    <p>Geser ke bawah untuk melihat masing-masing fungsi. <i class="fa-solid fa-arrow-down" style="font-size: 0.8em;"></i></p>
+                </section>
+                <section>
+                    <h3>1. Karyawan (Staff)</h3>
+                    <ul>
+                        <li>Mengakses tombol Tiba / Pulang.</li>
+                        <li>Memantau status pekerjaan (Menunggu Approval, Sedang Istirahat).</li>
+                        <li>Menampilkan Barcode untuk di-scan.</li>
+                        <li>Melakukan Request alat SEUIC.</li>
+                    </ul>
+                </section>
+                <section>
+                    <h3>2. Team Leader (TL)</h3>
+                    <ul>
+                        <li>Menyetujui (Approve) absensi masuk & pulang karyawan.</li>
+                        <li>Memantau anggota tim yang hadir dan belum hadir.</li>
+                        <li>Memberikan jatah istirahat (Assign Break) dan mengakhiri break manual jika diperlukan.</li>
+                    </ul>
+                </section>
+                <section>
+                    <h3>3. Security</h3>
+                    <ul>
+                        <li>Fungsi utama sebagai <b>Gerbang Validasi (Scanner)</b>.</li>
+                        <li>Memindai Exit Pass Break karyawan agar durasi waktu (65 menit) berjalan.</li>
+                        <li>Memindai Barcode Pulang karyawan agar absensi sah ditutup.</li>
+                        <li>Memverifikasi dan mendokumentasikan serah terima alat SEUIC.</li>
+                    </ul>
+                </section>
+                <section>
+                    <h3>4. Supervisor</h3>
+                    <ul>
+                        <li>Dasbor pemantauan tingkat atas (Helicopter View).</li>
+                        <li>Melihat total karyawan hadir dan jumlah yang sedang break secara <i>real-time</i>.</li>
+                        <li>Melacak sirkulasi alat SEUIC (berapa yang sedang dipinjam vs kembali).</li>
+                        <li>Memantau log riwayat masuk dan keluar harian.</li>
+                    </ul>
+                </section>
+            </section>
+
+            <!-- Slide 7: Closing -->
+            <section>
+                <i class="fa-solid fa-check-circle icon-large" style="color: #00e676;"></i>
+                <h2>Siap Digunakan</h2>
+                <p>Aplikasi ini dirancang responsif (Mobile-First) dan siap di-deploy sebagai PWA (Progresive Web App).</p>
+                <p style="margin-top: 40px; font-size: 0.8em; color: #64748b;">(Tekan 'ESC' untuk melihat peta slide)</p>
+            </section>
+
+        </div>
+    </div>
+
+    <!-- Reveal.js Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.min.js"></script>
+    <script>
+        Reveal.initialize({
+            hash: true,
+            transition: 'slide', // none/fade/slide/convex/concave/zoom
+            backgroundTransition: 'fade',
+        });
+    </script>
+</body>
+</html>

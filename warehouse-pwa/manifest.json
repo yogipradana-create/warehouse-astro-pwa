@@ -1,0 +1,17 @@
+{
+  "name": "Warehouse Astro Bogor",
+  "short_name": "Astro Bogor",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#06b6d4",
+  "description": "Sistem Manajemen Operasional Warehouse Astro Bogor",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Warehouse Astro Bogor</title>
+    <link rel="stylesheet" href="index.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#06b6d4">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel for JSX -->
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- HTML5 QRCode -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    
+    <!-- Firebase 8 -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+const { useState, useEffect, createContext, useContext, useRef } = React;
+
+const FaIcon = ({ name, size, color, className }) => (
+  <i className={`fa-solid fa-${name} ${className || ''}`} style={{ fontSize: size, color: color }}></i>
+);
+const Package = (p) => <FaIcon name="box" {...p} />;
+const User = (p) => <FaIcon name="user" {...p} />;
+const LogIn = (p) => <FaIcon name="right-to-bracket" {...p} />;
+const LogOut = (p) => <FaIcon name="right-from-bracket" {...p} />;
+const Clock = (p) => <FaIcon name="clock" {...p} />;
+const Camera = (p) => <FaIcon name="camera" {...p} />;
+const QrCode = (p) => <FaIcon name="qrcode" {...p} />;
+const AlertTriangle = (p) => <FaIcon name="triangle-exclamation" {...p} />;
+const Users = (p) => <FaIcon name="users" {...p} />;
+const Box = (p) => <FaIcon name="cube" {...p} />;
+const BarChart3 = (p) => <FaIcon name="chart-bar" {...p} />;
+const ArrowRightLeft = (p) => <FaIcon name="arrow-right-arrow-left" {...p} />;
+const Eye = (p) => <FaIcon name="eye" {...p} />;
+const EyeOff = (p) => <FaIcon name="eye-slash" {...p} />;
+const Trash2 = (p) => <FaIcon name="trash-can" {...p} />;
+
+// --- FIREBASE INITIALIZATION ---
+const firebaseConfig = {
+  apiKey: "AIzaSyCIKdpv55OTIR7dcyQtBdcpUwv7gupBVtg",
+  authDomain: "warehouse-astro-bogor.firebaseapp.com",
+  projectId: "warehouse-astro-bogor",
+  storageBucket: "warehouse-astro-bogor.firebasestorage.app",
+  messagingSenderId: "572547007544",
+  appId: "1:572547007544:web:e6c2f046eacb7210f652cd",
+  measurementId: "G-HKRY4W7PKN",
+  databaseURL: "https://warehouse-astro-bogor-default-rtdb.firebaseio.com"
+};
+
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.database();
+
+// --- MOCK DATABASE / STATE MANAGEMENT ---
+const AppContext = createContext();
+
+const AppProvider = ({ children }) => {
+  const [users, setUsers] = useState([]);
+  const [attendance, setAttendance] = useState([]);
+  const [breaks, setBreaks] = useState([]);
+  const [seuic, setSeuic] = useState([]);
+  const [currentUser, setCurrentUser] = useState(() => {
+    const saved = localStorage.getItem('warehouseUser');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('warehouseUser', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem('warehouseUser');
+    }
+  }, [currentUser]);
+  
+  useEffect(() => {
+    const toArray = (obj) => obj ? Object.keys(obj).map(key => ({ _docId: key, ...obj[key] })) : [];
+
+    const usersRef = db.ref('users');
+    usersRef.on('value', snap => {
+      if (!snap.exists()) {
+        usersRef.push({ staffId: 'TL01', name: 'Budi (TL)', role: 'TL', div: 'Warehouse A', password: 'leaderTempur860', status: 'active' });
+        usersRef.push({ staffId: 'SEC01', name: 'Agus (Sec)', role: 'Security', password: 'Komando860', status: 'active' });
+        usersRef.push({ staffId: 'SPV01', name: 'Siti (SPV)', role: 'Supervisor', password: 'Astro860', status: 'active' });
+      } else {
+        const usersArray = toArray(snap.val());
+        setUsers(usersArray);
+        
+        // Auto-recover default accounts if accidentally deleted
+        if (!usersArray.find(u => u.staffId === 'TL01')) {
+          usersRef.push({ staffId: 'TL01', name: 'Budi (TL)', role: 'TL', div: 'Warehouse A', password: 'leaderTempur860', status: 'active' });
+        }
+        if (!usersArray.find(u => u.staffId === 'SEC01')) {
+          usersRef.push({ staffId: 'SEC01', name: 'Agus (Sec)', role: 'Security', password: 'Komando860', status: 'active' });
+        }
+        if (!usersArray.find(u => u.staffId === 'SPV01')) {
+          usersRef.push({ staffId: 'SPV01', name: 'Siti (SPV)', role: 'Supervisor', password: 'Astro860', status: 'active' });
+        }
+      }
+    });
+
+    const attRef = db.ref('attendance');
+    attRef.on('value', snap => setAttendance(toArray(snap.val())));
+
+    const breaksRef = db.ref('breaks');
+    breaksRef.on('value', snap => setBreaks(toArray(snap.val())));
+
+    const seuicRef = db.ref('seuic');
+    seuicRef.on('value', snap => setSeuic(toArray(snap.val())));
+
+    return () => { usersRef.off(); attRef.off(); breaksRef.off(); seuicRef.off(); };
+  }, []);
+
+  // Sync current user status if it changes in DB
+  useEffect(() => {
+    if (currentUser) {
+      const updatedUser = users.find(u => u.staffId === currentUser.staffId);
+      if (updatedUser) setCurrentUser(updatedUser);
+    }
+  }, [users]);
+
+  return (
+    <AppContext.Provider value={{
+      users, currentUser, setCurrentUser,
+      attendance, breaks, seuic, db
+    }}>
+      {children}
+    </AppContext.Provider>
+  );
+};
+
+// --- AUTH & ROUTING ---
+const App = () => {
+  return (
+    <AppProvider>
+      <MainRouter />
+    </AppProvider>
+  );
+};
+
+const MainRouter = () => {
+  const { currentUser } = useContext(AppContext);
+  const [view, setView] = useState('login'); // login, register, dashboard
+
+  useEffect(() => {
+    if (currentUser) setView('dashboard');
+    else setView('login');
+  }, [currentUser]);
+
+  if (view === 'login') return <Login setView={setView} />;
+  if (view === 'register') return <Register setView={setView} />;
+  if (view === 'dashboard' && currentUser) {
+    if (currentUser.role === 'Karyawan') return <EmployeeDashboard />;
+    if (currentUser.role === 'TL') return <TLDashboard />;
+    if (currentUser.role === 'Security') return <SecurityDashboard />;
+    if (currentUser.role === 'Supervisor') return <SupervisorDashboard />;
+  }
+  return null;
+};
+
+const Login = ({ setView }) => {
+  const { users, setCurrentUser } = useContext(AppContext);
+  const [id, setId] = useState('');
+  const [pass, setPass] = useState('');
+  const [showPass, setShowPass] = useState(false);
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (!users || users.length === 0) return alert('Database sedang memuat atau kosong, silakan tunggu sebentar dan coba lagi.');
+    
+    // Safety check just in case staffId is undefined in some malformed data
+    const u = users.find(x => x.staffId && x.staffId.toUpperCase() === id.toUpperCase() && (x.password === pass || !x.password)); 
+    if (u) {
+      if (u.status === 'pending') return alert('Akun Anda belum disetujui oleh Team Leader.');
+      setCurrentUser(u);
+    }
+    else alert('Staff ID atau Password salah!');
+  };
+
+  return (
+    <div className="container" style={{justifyContent: 'center'}}>
+      <div className="glass-card text-center">
+        <Package size={48} color="var(--primary)" className="mb-4" />
+        <h2 className="mb-4">Warehouse Astro Bogor</h2>
+        <form onSubmit={handleLogin}>
+          <div className="form-group text-left">
+            <label className="form-label">Staff ID</label>
+            <input className="form-control" value={id} onChange={e=>setId(e.target.value)} required />
+          </div>
+          <div className="form-group text-left">
+            <label className="form-label">Password</label>
+            <div style={{position: 'relative'}}>
+              <input className="form-control" type={showPass ? "text" : "password"} value={pass} onChange={e=>setPass(e.target.value)} style={{paddingRight: '40px'}} />
+              <button type="button" onClick={() => setShowPass(!showPass)} style={{position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer'}}>
+                {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+          <button type="submit" className="btn btn-primary mt-4">
+            <LogIn size={20} /> Login
+          </button>
+        </form>
+        <p className="mt-4" style={{fontSize: '0.875rem'}}>
+          Belum punya akun? <a href="#" onClick={(e)=>{e.preventDefault(); setView('register');}}>Daftar Karyawan Baru</a>
+        </p>
+      </div>
+    </div>
+  );
+};
+
+const Register = ({ setView }) => {
+  const { users, db } = useContext(AppContext);
+  const [form, setForm] = useState({ name: '', staffId: '', div: '', password: '' });
+  const [showPass, setShowPass] = useState(false);
+  
+  const handleReg = (e) => {
+    e.preventDefault();
+    if (users.find(u => u.staffId === form.staffId)) return alert('Staff ID sudah terdaftar');
+    db.ref('users').push({ ...form, role: 'Karyawan', ktpPhoto: 'simulated-photo-url', status: 'pending' });
+    alert('Registrasi Berhasil! Silakan tunggu persetujuan dari Team Leader sebelum bisa Login.');
+    setView('login');
+  };
+
+  return (
+    <div className="container" style={{justifyContent: 'center'}}>
+      <div className="glass-card">
+        <h2 className="mb-4 text-center">Registrasi Karyawan</h2>
+        <form onSubmit={handleReg}>
+          <div className="form-group">
+            <label className="form-label">Nama Lengkap <span className="text-danger">*</span></label>
+            <input className="form-control" required onChange={e=>setForm({...form, name: e.target.value})} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Staff ID <span className="text-danger">*</span></label>
+            <input className="form-control" required onChange={e=>setForm({...form, staffId: e.target.value})} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Divisi <span className="text-danger">*</span></label>
+            <select className="form-control" required onChange={e=>setForm({...form, div: e.target.value})} defaultValue="">
+              <option value="" disabled>Pilih Divisi</option>
+              <option value="Outbound">Outbound</option>
+              <option value="Inbound">Inbound</option>
+              <option value="Inventory">Inventory</option>
+              <option value="QA">QA</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Password <span className="text-danger">*</span></label>
+            <div style={{position: 'relative'}}>
+              <input className="form-control" type={showPass ? "text" : "password"} required onChange={e=>setForm({...form, password: e.target.value})} style={{paddingRight: '40px'}} />
+              <button type="button" onClick={() => setShowPass(!showPass)} style={{position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer'}}>
+                {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Foto KTP <span className="text-danger">*</span></label>
+            <input className="form-control" type="file" accept="image/*" capture="environment" required />
+          </div>
+          <button type="submit" className="btn btn-primary mt-4">Daftar</button>
+          <button type="button" className="btn btn-outline mt-4" onClick={()=>setView('login')}>Batal</button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// --- EMPLOYEE DASHBOARD ---
+const EmployeeDashboard = () => {
+  const { currentUser, attendance, breaks, seuic, setCurrentUser, db } = useContext(AppContext);
+  const [view, setView] = useState('home'); // home, seuic
+  
+  // Attendance logic
+  const today = new Date().toISOString().split('T')[0];
+  const todayAtts = attendance.filter(a => a.staffId === currentUser.staffId && a.date === today).sort((a,b) => new Date(b.inTime) - new Date(a.inTime));
+  const myAtt = todayAtts[0];
+  
+  const handleClockIn = () => {
+    db.ref('attendance').push({ staffId: currentUser.staffId, date: today, inTime: new Date().toISOString(), outTime: null, status: 'pending_in' });
+  };
+  const handleClockOut = () => {
+    if (myAtt) db.ref('attendance/' + myAtt._docId).update({ outTime: new Date().toISOString(), status: 'pending_out_tl' });
+  };
+
+  // Break logic
+  const myBreak = breaks.find(b => b.staffId === currentUser.staffId && (b.status === 'assigned' || b.status === 'active'));
+  const myFinishedBreak = breaks.find(b => b.staffId === currentUser.staffId && b.status === 'finished' && b.startTime && new Date(b.startTime).toISOString().split('T')[0] === today);
+  
+  let employeeStatus = 'Belum Absen Masuk';
+  if (myAtt) {
+    if (myAtt.status === 'pending_in') {
+      employeeStatus = 'Menunggu Approval Masuk (TL)';
+    } else if (myAtt.status === 'pending_out_tl') {
+      employeeStatus = 'Menunggu Approval Pulang (TL)';
+    } else if (myAtt.status === 'pending_out_sec') {
+      employeeStatus = 'Menunggu Scan Pulang (Security)';
+    } else if (myAtt.outTime && myAtt.status === 'approved_out') {
+      employeeStatus = 'Sudah Pulang';
+    } else { // approved_in
+      if (myFinishedBreak) {
+        employeeStatus = 'Sedang Bekerja (Sudah Istirahat)';
+      } else if (myBreak) {
+        employeeStatus = 'Sedang/Menunggu Istirahat';
+      } else {
+        employeeStatus = 'Sedang Bekerja (Belum Istirahat)';
+      }
+    }
+  }
+  
+  // SEUIC logic
+  const mySeuic = seuic.find(s => s.staffId === currentUser.staffId && (s.status === 'requested' || s.status === 'borrowed'));
+  const [seuicId, setSeuicId] = useState('');
+
+  const reqSeuic = () => {
+    if (!seuicId) return;
+    db.ref('seuic').push({ staffId: currentUser.staffId, seuicId, status: 'requested', conditionBorrow: null });
+    setSeuicId('');
+  };
+
+  if (myBreak) return <ExitPass breakData={myBreak} user={currentUser} />;
+
+  return (
+    <div className="container">
+      <div className="header">
+        <div className="flex justify-between items-center px-2">
+          <div>
+            <h3 style={{margin: 0}}>Halo, {currentUser.name}</h3>
+            <span className="badge badge-primary">{currentUser.role} - {currentUser.div}</span>
+          </div>
+          <button className="btn btn-outline" style={{width:'auto', padding:'0.5rem'}} onClick={()=>setCurrentUser(null)}>
+            <LogOut size={16} />
+          </button>
+        </div>
+      </div>
+
+      <div className="content-area">
+        {view === 'home' ? (
+          <>
+            <div className="glass-card text-center">
+              <h3 className="mb-4">Absensi Hari Ini</h3>
+              {!myAtt ? (
+                <button className="btn btn-primary" onClick={handleClockIn}><Clock size={20}/> Tiba di Warehouse</button>
+              ) : myAtt.status === 'pending_in' ? (
+                <div>
+                  <p>Menunggu Team Leader...</p>
+                </div>
+              ) : myAtt.status === 'approved_in' && !myAtt.outTime ? (
+                <div>
+                  <p className="mb-4">Masuk: {new Date(myAtt.inTime).toLocaleTimeString()}</p>
+                  <button className="btn btn-danger" onClick={handleClockOut}><Clock size={20}/> Pulang</button>
+                </div>
+              ) : myAtt.status === 'pending_out_tl' ? (
+                <div>
+                  <p>Menunggu Approval Pulang (TL)...</p>
+                </div>
+              ) : myAtt.status === 'pending_out_sec' ? (
+                <div>
+                  <h4 className="mb-2 text-danger font-bold">BARCODE KEPULANGAN</h4>
+                  <div className="bg-white inline-block mb-2" style={{backgroundColor: 'white', padding: '10px', borderRadius: '12px'}}>
+                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${currentUser.staffId}`} alt="QR Code Kepulangan" style={{width: '200px', height: '200px'}} />
+                  </div>
+                  <p className="text-sm font-bold">Tunjukkan pada Security</p>
+                </div>
+              ) : (
+                <div>
+                  <p>Masuk: {new Date(myAtt.inTime).toLocaleTimeString()}</p>
+                  <p>Pulang: {new Date(myAtt.outTime).toLocaleTimeString()}</p>
+                  <span className="badge badge-success mt-4 mb-4" style={{display:'inline-block'}}>Absensi Selesai</span>
+                  <div style={{marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)'}}>
+                    <button className="btn btn-outline" onClick={handleClockIn}><Clock size={20}/> Tiba di Warehouse (Shift Baru)</button>
+                  </div>
+                </div>
+              )}
+              
+              <div className="mt-4 pt-4" style={{borderTop: '1px solid var(--glass-border)'}}>
+                <p className="text-sm font-bold">Status Pekerjaan:</p>
+                <span className={`badge ${employeeStatus.includes('Belum Absen') || employeeStatus.includes('Menunggu') ? 'badge-warning' : 'badge-primary'} mt-2`}>
+                  {employeeStatus}
+                </span>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="glass-card">
+            <h3 className="mb-4 flex items-center gap-2"><ArrowRightLeft size={20}/> Peminjaman SEUIC</h3>
+            {mySeuic ? (
+              <div className="text-center">
+                <p>Status: <span className="badge badge-warning">{mySeuic.status.toUpperCase()}</span></p>
+                <p className="mt-2">SEUIC ID: {mySeuic.seuicId}</p>
+                <p className="mt-4 text-sm">Harap ke pos Security untuk validasi/pengembalian.</p>
+              </div>
+            ) : (
+              <div>
+                <div className="form-group">
+                  <label className="form-label">Nomor Asset SEUIC</label>
+                  <input className="form-control" value={seuicId} onChange={e=>setSeuicId(e.target.value)} placeholder="Contoh: S-001" />
+                </div>
+                <button className="btn btn-primary mt-4" onClick={reqSeuic}>Request Pinjam</button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="bottom-nav">
+        <div className={`nav-item ${view==='home'?'active':''}`} onClick={()=>setView('home')}>
+          <User size={24} /> Absensi
+        </div>
+        <div className={`nav-item ${view==='seuic'?'active':''}`} onClick={()=>setView('seuic')}>
+          <Box size={24} /> Alat (SEUIC)
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- EXIT PASS COMPONENT (Employee Side) ---
+const ExitPass = ({ breakData, user }) => {
+  const [timeLeft, setTimeLeft] = useState(65 * 60); // 1h 5m in seconds
+  
+  useEffect(() => {
+    if (breakData.status !== 'active') return;
+    
+    // Calculate actual time left based on startTime
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - breakData.startTime) / 1000);
+      const remaining = (65 * 60) - elapsed;
+      if (remaining <= 0) {
+        setTimeLeft(0);
+        clearInterval(interval);
+      } else {
+        setTimeLeft(remaining);
+        // Haptic feedback at exactly 60 minutes passed (5 mins left)
+        if (remaining === 300) {
+          if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
+        }
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [breakData]);
+
+  const formatTime = (s) => {
+    const hrs = Math.floor(s / 3600);
+    const mins = Math.floor((s % 3600) / 60);
+    const secs = s % 60;
+    return `${hrs.toString().padStart(2,'0')}:${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
+  };
+
+  const formatDateTime = (ts) => {
+    return new Date(ts).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+  };
+
+  const isScanned = breakData.status === 'active';
+
+  return (
+    <div className={`exit-pass ${isScanned ? 'success' : 'active'}`}>
+      <h2>{isScanned ? 'BREAK DIMULAI' : 'EXIT PASS'}</h2>
+      <div className="exit-pass-timer">{formatTime(timeLeft)}</div>
+      
+      {!isScanned && (
+        <div className="exit-pass-barcode" style={{backgroundColor: 'white', padding: '15px', borderRadius: '12px', display: 'inline-block', marginTop: '1rem'}}>
+          <img src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${user.staffId}`} alt="QR Code Exit Pass" style={{width: '250px', height: '250px'}} />
+          <div className="text-center text-black font-bold mt-2" style={{fontSize: '1.2rem'}}>{user.staffId}</div>
+        </div>
+      )}
+      
+      <div className="glass-card mt-4" style={{color:'black', background:'rgba(255,255,255,0.9)'}}>
+        <p style={{color:'black'}}><strong>Nama:</strong> {user.name}</p>
+        <p style={{color:'black'}}><strong>Divisi:</strong> {user.div}</p>
+        <p style={{color:'black'}}><strong>Jatah Waktu Break:</strong> 65 Menit</p>
+      </div>
+
+      {isScanned && breakData.startTime && (
+        <div className="glass-card mt-4" style={{color:'black', background:'rgba(255,255,255,0.9)', textAlign:'left'}}>
+          <p style={{color:'black'}}><strong>Mulai Break:</strong> {formatDateTime(breakData.startTime)}</p>
+          <p style={{color:'black'}}><strong>Valid Hingga:</strong> {formatDateTime(breakData.startTime + (65 * 60 * 1000))}</p>
+        </div>
+      )}
+      
+      <p className="mt-4 font-bold" style={{color:'black'}}>
+        {isScanned ? 'Selamat Beristirahat. Silakan kembali sebelum waktu habis.' : 'Tunjukkan exit pass ini pada security untuk Proses Scan Oleh Security & check body'}
+      </p>
+    </div>
+  );
+};
+
+// --- TEAM LEADER DASHBOARD ---
+const TLDashboard = () => {
+  const { users, attendance, breaks, setCurrentUser, db } = useContext(AppContext);
+  const team = users.filter(u => u.role === 'Karyawan');
+  const today = new Date().toISOString().split('T')[0];
+
+  const assignBreak = (staffId) => {
+    const atts = attendance.filter(a => a.staffId === staffId && a.date === today).sort((a,b) => new Date(b.inTime) - new Date(a.inTime));
+    const att = atts[0];
+    if (!att || att.status === 'pending_in') return alert('Karyawan belum disetujui masuk.');
+
+    const exists = breaks.find(b => b.staffId === staffId && b.status !== 'finished');
+    if (exists) return alert('Karyawan sedang/akan istirahat.');
+    
+    const finishedBreaksToday = breaks.filter(b => b.staffId === staffId && b.status === 'finished' && b.startTime && new Date(b.startTime).toISOString().split('T')[0] === today);
+    if (finishedBreaksToday.length > 0) {
+      const hrsSinceIn = (Date.now() - new Date(att.inTime).getTime()) / (1000 * 60 * 60);
+      if (hrsSinceIn < 10) return alert('Jatah istirahat berikutnya adalah 10 jam setelah jam masuk.');
+    }
+
+    db.ref('breaks').push({ staffId, status: 'assigned' });
+  };
+
+  const stopBreak = (docId) => {
+    db.ref('breaks/' + docId).update({ status: 'finished' });
+  };
+
+  const approveIn = (docId) => {
+    db.ref('attendance/' + docId).update({ status: 'approved_in' });
+  };
+  const approveOut = (docId) => {
+    db.ref('attendance/' + docId).update({ status: 'pending_out_sec' });
+  };
+
+  const pendingUsers = users.filter(u => u.status === 'pending');
+  const approveUser = (docId) => {
+    db.ref('users/' + docId).update({ status: 'active' });
+    alert('Akun Karyawan berhasil disetujui!');
+  };
+
+  return (
+    <div className="container">
+      <div className="header">
+        <div className="flex justify-between items-center px-2">
+          <h2 style={{color: 'var(--primary-dark)'}}>TL Dashboard</h2>
+          <button className="btn btn-outline" style={{width:'auto', padding:'0.5rem'}} onClick={()=>setCurrentUser(null)}>
+            <LogOut size={16} />
+          </button>
+        </div>
+      </div>
+
+      <div className="glass-card">
+        <h3 className="mb-4 text-warning">Persetujuan Akun Baru</h3>
+        {pendingUsers.map(u => (
+          <div key={u.staffId} className="flex justify-between items-center mb-2 pb-2 border-b">
+            <div>
+              <p className="font-bold">{u.name} <span className="badge badge-primary" style={{fontSize:'0.6rem'}}>{u.staffId}</span></p>
+              <p className="text-sm">Divisi: {u.div}</p>
+            </div>
+            <button className="btn btn-success" style={{width:'auto', padding:'0.25rem 0.5rem', fontSize:'0.75rem'}} onClick={()=>approveUser(u._docId)}>Setujui Akun</button>
+          </div>
+        ))}
+        {pendingUsers.length === 0 && <p className="text-sm">Tidak ada pendaftaran akun baru.</p>}
+      </div>
+      
+      <div className="glass-card">
+        <h3 className="mb-4">Anggota Tim & Absensi</h3>
+        {team.map(emp => {
+          const atts = attendance.filter(a => a.staffId === emp.staffId && a.date === today).sort((a,b) => new Date(b.inTime) - new Date(a.inTime));
+          const att = atts[0];
+          const brk = breaks.find(b => b.staffId === emp.staffId && b.status !== 'finished');
+          
+          return (
+            <div key={emp.staffId} className="flex justify-between items-center mb-4" style={{borderBottom:'1px solid var(--glass-border)', paddingBottom:'0.5rem'}}>
+              <div>
+                <div className="font-bold">{emp.name}</div>
+                <div className="text-sm">In: {att && att.status !== 'pending_in' ? new Date(att.inTime).toLocaleTimeString() : '-'}</div>
+              </div>
+              <div>
+                {!att ? (
+                  <span className="text-sm text-light">Belum Hadir</span>
+                ) : att.status === 'pending_in' ? (
+                  <button className="btn btn-success" style={{padding:'0.25rem 0.5rem', fontSize:'0.75rem', width:'auto'}} onClick={()=>approveIn(att._docId)}>Approve Masuk</button>
+                ) : att.status === 'pending_out_tl' ? (
+                  <button className="btn btn-success" style={{padding:'0.25rem 0.5rem', fontSize:'0.75rem', width:'auto'}} onClick={()=>approveOut(att._docId)}>Approve Pulang</button>
+                ) : att.status === 'pending_out_sec' ? (
+                  <span className="badge badge-warning">Menunggu Scan Pulang (Sec)</span>
+                ) : att.status === 'approved_out' ? (
+                  <span className="badge badge-success">Sudah Pulang</span>
+                ) : ( // approved_in
+                  !brk ? (
+                    (() => {
+                      const finishedBreaks = breaks.filter(b => b.staffId === emp.staffId && b.status === 'finished' && b.startTime && new Date(b.startTime).toISOString().split('T')[0] === today);
+                      const hrsSinceIn = (Date.now() - new Date(att.inTime).getTime()) / (1000 * 60 * 60);
+                      if (finishedBreaks.length > 0 && hrsSinceIn < 10) {
+                        return <span className="badge badge-success">Sudah Break</span>;
+                      }
+                      return <button className="btn btn-primary" style={{padding:'0.25rem 0.5rem', fontSize:'0.75rem', width:'auto'}} onClick={()=>assignBreak(emp.staffId)}>Assign Break</button>;
+                    })()
+                  ) : brk.status === 'assigned' ? (
+                    <span className="badge badge-warning">Menunggu Scan Sec</span>
+                  ) : (
+                    <button className="btn btn-danger" style={{padding:'0.25rem 0.5rem', fontSize:'0.75rem', width:'auto'}} onClick={()=>stopBreak(brk._docId)}>Selesai Break</button>
+                  )
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// --- SECURITY DASHBOARD ---
+const SecurityDashboard = () => {
+  const { breaks, seuic, users, attendance, currentUser, setCurrentUser, db } = useContext(AppContext);
+  const [view, setView] = useState('scan');
+  const today = new Date().toISOString().split('T')[0];
+  
+  // Use refs to prevent stale closure in QR Code scanner
+  const breaksRef = useRef(breaks);
+  const attRef = useRef(attendance);
+  useEffect(() => { breaksRef.current = breaks; }, [breaks]);
+  useEffect(() => { attRef.current = attendance; }, [attendance]);
+
+  const isProcessingRef = useRef(false);
+
+  const scanSuccess = (staffId) => {
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
+
+    const currentBreaks = breaksRef.current;
+    const currentAtt = attRef.current;
+
+    const brk = currentBreaks.find(b => b.staffId === staffId && b.status === 'assigned');
+    const att = currentAtt.find(a => a.staffId === staffId && a.date === today && a.status === 'pending_out_sec');
+    
+    if (brk) {
+      db.ref('breaks/' + brk._docId).update({ status: 'active', startTime: Date.now() });
+      alert('Berhasil scan exit pass break untuk: ' + staffId);
+    } else if (att) {
+      db.ref('attendance/' + att._docId).update({ status: 'approved_out' });
+      alert('Berhasil scan kepulangan untuk: ' + staffId);
+    } else {
+      alert('Tanda keluar tidak valid atau antrean tidak ditemukan untuk: ' + staffId);
+    }
+
+    // Cooldown 3 detik agar kamera tidak scan berulang kali dengan cepat
+    setTimeout(() => {
+      isProcessingRef.current = false;
+    }, 3000);
+  };
+
+  useEffect(() => {
+    let html5QrCode;
+    if (view === 'scan') {
+      html5QrCode = new Html5Qrcode("reader");
+      html5QrCode.start(
+        { facingMode: "environment" }, // Memaksa menggunakan kamera belakang
+        { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
+        (decodedText) => {
+          scanSuccess(decodedText);
+        },
+        (errorMessage) => {
+          // Abaikan error saat tidak ada barcode yang terlihat
+        }
+      ).catch(err => {
+        console.error("Kamera gagal dimulai: ", err);
+      });
+    }
+    
+    return () => {
+      if (html5QrCode) {
+        html5QrCode.stop().then(() => html5QrCode.clear()).catch(e => console.log(e));
+      }
+    };
+  }, [view]);
+
+  const handleApproveSeuic = (docId, condition, note) => {
+    db.ref('seuic/' + docId).update({ status: 'borrowed', conditionBorrow: condition, noteBorrow: note, secOnDuty: currentUser.name });
+  };
+  
+  const handleReturnSeuic = (docId, condition) => {
+    db.ref('seuic/' + docId).update({ status: 'returned', conditionReturn: condition, secOnDutyReturn: currentUser.name });
+  };
+
+  return (
+    <div className="container">
+      <div className="header">
+        <div className="flex justify-between items-center px-2">
+          <h2 style={{color: 'var(--primary-dark)'}}>Security Dashboard</h2>
+          <button className="btn btn-outline" style={{width:'auto', padding:'0.5rem'}} onClick={()=>setCurrentUser(null)}>
+            <LogOut size={16} />
+          </button>
+        </div>
+      </div>
+      
+      <div className="content-area">
+        {view === 'scan' ? (
+          <div className="glass-card text-center">
+            <h3 className="mb-4">Scanner Barcode</h3>
+            
+            {/* Real Camera Scanner Container */}
+            <div id="reader" className="mb-4" style={{width: '100%', maxWidth: '400px', margin: '0 auto', overflow: 'hidden', borderRadius: '12px', background: 'white'}}></div>
+            
+            {/* Manual scan options removed for strictly barcode-based workflow */}
+          </div>
+        ) : (
+          <div className="glass-card">
+            <h3 className="mb-4">Antrean SEUIC</h3>
+            {seuic.filter(s=>s.status !== 'returned').map(s => {
+              const emp = users.find(u=>u.staffId === s.staffId);
+              return (
+                <div key={s.id} className="mb-4 p-3 bg-white" style={{borderRadius:'8px', border:'1px solid #cbd5e1'}}>
+                  <p><strong>Peminjam:</strong> {emp?.name} ({s.staffId})</p>
+                  <p><strong>Alat:</strong> {s.seuicId}</p>
+                  <p><strong>Status:</strong> <span className="badge badge-warning">{s.status}</span></p>
+                  
+                  {s.status === 'requested' && (
+                    <div className="mt-3 border-t pt-3">
+                      <p className="text-sm mb-2 text-danger"><AlertTriangle size={14}/> Validasi wajah dengan KTP dan foto kondisi alat.</p>
+                      <button className="btn btn-outline mb-2" style={{width:'auto', fontSize:'0.75rem'}}><Camera size={14}/> Ambil Foto Alat</button>
+                      <div className="flex gap-2 mt-2">
+                        <button className="btn btn-success" style={{width:'auto', flex:1}} onClick={()=>handleApproveSeuic(s._docId, 'Bagus', '')}>Setujui (Bagus)</button>
+                        <button className="btn btn-danger" style={{width:'auto', flex:1}} onClick={()=>{
+                          const note = prompt("Catatan Kerusakan:");
+                          if(note) handleApproveSeuic(s._docId, 'Rusak', note);
+                        }}>Setujui (Rusak)</button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {s.status === 'borrowed' && (
+                    <div className="mt-3 border-t pt-3">
+                      <button className="btn btn-outline mb-2" style={{width:'auto', fontSize:'0.75rem'}}><Camera size={14}/> Foto Bukti Kembali</button>
+                      <button className="btn btn-primary mt-2" onClick={()=>handleReturnSeuic(s._docId, 'Bagus')}>Terima Pengembalian</button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+            {seuic.filter(s=>s.status !== 'returned').length === 0 && <p>Tidak ada antrean SEUIC.</p>}
+          </div>
+        )}
+      </div>
+      
+      <div className="bottom-nav">
+        <div className={`nav-item ${view==='scan'?'active':''}`} onClick={()=>setView('scan')}>
+          <QrCode size={24} /> Scanner
+        </div>
+        <div className={`nav-item ${view==='seuic'?'active':''}`} onClick={()=>setView('seuic')}>
+          <Box size={24} /> SEUIC Auth
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- SUPERVISOR DASHBOARD ---
+const SupervisorDashboard = () => {
+  const { attendance, breaks, seuic, users, setCurrentUser, db } = useContext(AppContext);
+  const today = new Date().toISOString().split('T')[0];
+  
+  const todayAtt = attendance.filter(a => a.date === today);
+  const activeBreaks = breaks.filter(b => b.status === 'active').length;
+  const borrowedSeuic = seuic.filter(s => s.status === 'borrowed').length;
+  const returnedSeuic = seuic.filter(s => s.status === 'returned').length;
+
+  const editPassword = (docId, staffId) => {
+    const newPass = prompt('Masukkan sandi baru untuk ' + staffId + ':');
+    if (newPass) {
+      db.ref('users/' + docId).update({ password: newPass });
+      alert('Sandi berhasil diubah!');
+    }
+  };
+
+  const deleteAccount = (docId, staffId) => {
+    if (confirm('Yakin ingin menghapus akun ' + staffId + '?')) {
+      db.ref('users/' + docId).remove();
+      alert('Akun berhasil dihapus.');
+    }
+  };
+
+  return (
+    <div className="container">
+      <div className="header">
+        <div className="flex justify-between items-center px-2">
+          <h2 style={{color: 'var(--primary-dark)'}}>Supervisor Panel</h2>
+          <button className="btn btn-outline" style={{width:'auto', padding:'0.5rem'}} onClick={()=>setCurrentUser(null)}>
+            <LogOut size={16} />
+          </button>
+        </div>
+      </div>
+      
+      <div className="glass-card flex gap-4 text-center">
+        <div style={{flex:1}}>
+          <Users size={32} color="var(--primary)" className="mx-auto" />
+          <h3 className="mt-2">{todayAtt.length}</h3>
+          <p className="text-sm">Hadir Hari Ini</p>
+        </div>
+        <div style={{flex:1}}>
+          <Clock size={32} color="var(--warning)" className="mx-auto" />
+          <h3 className="mt-2">{activeBreaks}</h3>
+          <p className="text-sm">Sedang Break</p>
+        </div>
+      </div>
+
+      <div className="glass-card text-center">
+        <h3 className="mb-2 text-danger">Reset Sistem</h3>
+        <p className="text-sm mb-4">Hapus semua riwayat absensi, peminjaman alat, break, dan akun uji coba. (Hanya menyisakan akun TL01, SEC01, SPV01).</p>
+        <button className="btn btn-danger" onClick={() => {
+          if (confirm('YAKIN HAPUS SEMUA DATA UJI COBA? Ini tidak bisa dikembalikan.')) {
+            db.ref('attendance').remove();
+            db.ref('breaks').remove();
+            db.ref('seuic').remove();
+            users.forEach(u => {
+              if (!['TL01', 'SEC01', 'SPV01'].includes(u.staffId)) {
+                db.ref('users/' + u._docId).remove();
+              }
+            });
+            alert('Semua data berhasil dibersihkan!');
+          }
+        }}>
+          <Trash2 size={16} /> Hapus Data Uji Coba
+        </button>
+      </div>
+      
+      <div className="glass-card">
+        <h3 className="mb-4 flex items-center gap-2"><Users size={20}/> Manajemen Akun</h3>
+        <div style={{maxHeight:'250px', overflowY:'auto'}}>
+          {users.filter(u => u.status === 'active').map(u => (
+            <div key={u.staffId} className="flex justify-between items-center border-b pb-2 mb-2">
+              <div>
+                <p className="font-bold">{u.name} <span className="badge badge-primary" style={{fontSize:'0.6rem'}}>{u.role}</span></p>
+                <p className="text-sm text-muted">{u.staffId}</p>
+              </div>
+              <div className="flex gap-2">
+                <button className="btn btn-outline" style={{width:'auto', padding:'0.25rem 0.5rem', fontSize:'0.75rem'}} onClick={()=>editPassword(u._docId, u.staffId)}>Edit Sandi</button>
+                <button className="btn btn-danger" style={{width:'auto', padding:'0.25rem 0.5rem', fontSize:'0.75rem'}} onClick={()=>deleteAccount(u._docId, u.staffId)}><Trash2 size={12}/></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="glass-card">
+        <h3 className="mb-4 flex items-center gap-2"><BarChart3 size={20}/> Status Inventaris SEUIC</h3>
+        <div className="flex justify-between mb-2">
+          <span>Sedang Dipinjam:</span>
+          <span className="font-bold text-danger">{borrowedSeuic}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Sudah Dikembalikan:</span>
+          <span className="font-bold text-success">{returnedSeuic}</span>
+        </div>
+      </div>
+      
+      <div className="glass-card">
+        <h3 className="mb-4">Log Absensi (Hari Ini)</h3>
+        {todayAtt.map(a => {
+          const u = users.find(x => x.staffId === a.staffId);
+          return (
+            <div key={a.staffId} className="flex justify-between border-b pb-2 mb-2 text-sm">
+              <span>{u?.name}</span>
+              <span>{new Date(a.inTime).toLocaleTimeString()} - {a.outTime ? new Date(a.outTime).toLocaleTimeString() : '...'}</span>
+            </div>
+          )
+        })}
+        {todayAtt.length === 0 && <p className="text-sm">Belum ada absensi hari ini.</p>}
+      </div>
+    </div>
+  );
+};
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+
+// Register Service Worker for PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(err => console.error('SW Error:', err));
+  });
+}
+    </script>
+</body>
+</html>
