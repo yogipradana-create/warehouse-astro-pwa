@@ -575,7 +575,32 @@ const TLDashboard = () => {
             <div key={emp.staffId} className="flex justify-between items-center mb-4" style={{borderBottom:'1px solid var(--glass-border)', paddingBottom:'0.5rem'}}>
               <div>
                 <div className="font-bold">{emp.name}</div>
-                <div className="text-sm">In: {att && att.status !== 'pending_in' ? new Date(att.inTime).toLocaleTimeString() : '-'}</div>
+                <div className="text-sm">Jam Masuk: {att && att.status !== 'pending_in' ? new Date(att.inTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '-'}</div>
+                
+                {(() => {
+                  let brkData = null;
+                  const activeB = breaks.find(b => b.staffId === emp.staffId && b.status === 'active' && b.startTime);
+                  if (activeB) brkData = activeB;
+                  else {
+                     const fin = breaks.filter(b => b.staffId === emp.staffId && b.status === 'finished' && b.startTime && new Date(b.startTime).toISOString().split('T')[0] === today);
+                     if (fin.length > 0) brkData = fin[fin.length - 1];
+                  }
+                  
+                  if (!brkData) return null;
+                  
+                  const startT = new Date(brkData.startTime);
+                  const endT = new Date(brkData.startTime + (65 * 60 * 1000));
+                  const isOver = brkData.status === 'active' && Date.now() > endT.getTime();
+                  
+                  return (
+                    <div className="text-sm mt-1" style={{lineHeight: '1.2'}}>
+                      {brkData.status === 'active' && <span className="font-bold" style={{color: isOver ? '#ef4444' : 'var(--primary)'}}>Sedang Break<br/></span>}
+                      <span style={{color: isOver ? '#ef4444' : 'var(--text-muted)'}}>
+                        Break: {startT.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} - {endT.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                      </span>
+                    </div>
+                  )
+                })()}
               </div>
               <div>
                 {!att ? (
